@@ -1,0 +1,24 @@
+blå röd knapp - e
+blå, grön knapp - b 
+blå kontrol(höger) - v
+blå kontrol(vänster) - u
+blå kontrol(ner) - y
+blå kontrol(upp) - n
+röd(höger) - j
+röd(vänster) - l
+röd(ner) - i
+röd(upp) - K
+röd röd knapp - f5
+röd, grön knapp - o
+gul kontrol(höger) - d
+gul kontrol(vänster) - g
+gul kontrol(ner) - r
+gul kontrol(upp) - f
+gul, röd knapp - s
+gul, grön knapp - a
+grön kontrol, röd knapp - z
+grön kontrol, grön knapp - shift
+grön kontrol(vänster) - höger pil
+grön kontrol(höger) - vänster pil
+grön kontrol(upp) - upp pil
+grön kontrol(ner) - ner pil
