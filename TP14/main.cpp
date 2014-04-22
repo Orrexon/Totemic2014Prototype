@@ -9,6 +9,8 @@
 #include "Thor/Math/Trigonometry.hpp"
 #include "Thor\Time.hpp"
 #include "Thor\Animation.hpp"
+#include "Thor\Particles.hpp"
+#include "Thor\Math.hpp"
 
 #include <iostream>
 #include <string>
@@ -26,6 +28,12 @@
 #include "Stalker.h"
 #include "Box2D\Dynamics\b2Fixture.h"
 class b2Fixture;
+
+//GLOBAL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+bool Particle = false;
+sf::Vector2f def_coll_pos = {0,0};
+sf::Vector2f def_coll_dir = { 0, 0 };
+
 b2Vec2 gameToPhysicsUnits(sf::Vector2f p_unit)
 {
 	return b2Vec2(p_unit.x / 32.f, p_unit.y / 32.f);
@@ -252,7 +260,25 @@ class WorldContactListener : public b2ContactListener
 					std::cout << "!!!!!!!!!!!!!!!YOU ARE MY FRIEND?????" << std::endl;
 				}
 			}
+			else if (playerA->type == "defender" && playerB->type == "defender")
+			{
+				Particle = true;
+				def_coll_dir = physicsToGameUnits(playerB->defender_body->GetWorldCenter()-playerA->defender_body->GetWorldCenter());
+				float Lenght = sqrtf(def_coll_dir.x*def_coll_dir.x + def_coll_dir.y*def_coll_dir.y);
+				def_coll_pos = physicsToGameUnits(playerA->defender_body->GetWorldCenter());
+				def_coll_dir /= Lenght;
+				def_coll_pos += def_coll_dir * 60.f;
 
+			}
+			else if (playerB->type == "defender" && playerA->type == "defender")
+			{
+				Particle = true;
+				def_coll_dir = physicsToGameUnits(playerA->defender_body->GetWorldCenter() - playerB->defender_body->GetWorldCenter());
+				float Lenght = sqrtf(def_coll_dir.x*def_coll_dir.x + def_coll_dir.y*def_coll_dir.y);
+				def_coll_pos = physicsToGameUnits(playerB->defender_body->GetWorldCenter());
+				def_coll_dir /= Lenght;
+				def_coll_pos += def_coll_dir * 60.f;
+			}
 		}
 	}
 
@@ -427,7 +453,18 @@ int main(int argc, char *argv[])
 	animation.addAnimation("move", move, sf::seconds(0.5f));
 	animation.playAnimation("move", true);
 	
+	//Particles
+	sf::Texture particleTex;
+	particleTex.loadFromFile("../assets/png/defender_collision.png", sf::IntRect(0, 0, 8, 8));
+	thor::ParticleSystem partSys;
+	partSys.setTexture(particleTex);
+
+	thor::UniversalEmitter emitter;
+	emitter.setEmissionRate(25);
 	
+	
+
+	sf::Clock clockP;
 	// Physics world
 	b2Vec2 gravity(0.0f, 0.0f);
 	b2World* world = new b2World(gravity);
@@ -608,26 +645,27 @@ int main(int argc, char *argv[])
 		}
 		CoolDown += fDeltaTime;
 		//std::cout << fDeltaTime << std::endl;
-		for (auto i: players)
-		{
-			i->m_defender->previousVel = i->m_defender->currentVel;
-
-		}
+		
 		for (auto player : players)
 		{
 			b2Vec2 velo(player->m_gatherer->gatherer_body->GetLinearVelocity().x *0.89f,
 				player->m_gatherer->gatherer_body->GetLinearVelocity().y *0.89f);
 			player->m_gatherer->gatherer_body->SetLinearVelocity(velo);
 		}
+		/*for (auto i: players)
+		{
+			i->m_defender->previousVel = i->m_defender->currentVel;
+
+		}*/
 		audioSystem->update();
 		world->Step(1 / 60.f, 8, 3);
 		//DELTAVELOCITY
-		for (auto i : players)
+		/*for (auto i : players)
 		{
 			i->m_defender->currentVel = i->m_defender->defender_body->GetLinearVelocity();
 			i->m_defender->DVel = i->m_defender->currentVel - i->m_defender->previousVel;
 
-		}
+		}*/
 		actionMap.update(window);
 		actionMap2.update(window);
 		/*for (int i = 0; i < numDevices; i++)
@@ -886,7 +924,7 @@ int main(int argc, char *argv[])
 		}
 		for (int i = 0; i < numDevices; ++i)
 		{
-			b2Vec2 a = { players[i]->m_defender->DVel.x / fDeltaTime, players[i]->m_defender->DVel.y / fDeltaTime };
+			//b2Vec2 a = { players[i]->m_defender->DVel.x / fDeltaTime, players[i]->m_defender->DVel.y / fDeltaTime };
 				
 			/*b2Vec2 vector = gameToPhysicsUnits(sf::Mouse::getPosition()) - players[i]->m_defender->defender_body->GetPosition();
 			float angle = atan2f(vector.y, vector.x);
@@ -931,33 +969,33 @@ int main(int argc, char *argv[])
 			{
 				players[i]->m_defender->m_animation.setScale(1.f, 1.f);
 			}*/
-			if (CoolDown > 10.f)
-			{
-				CoolDown = 0.f;
-			}
+			
 			if (players[i]->m_defender->defender_body->GetLinearVelocity().x < 0)
 			{
-				players[i]->m_defender->m_animation.setScale(1.f, 1.f);
-				if (a.Length() < players[i]->m_defender->defender_body->GetLinearVelocity().Length())
-				{
-					a = b2Vec2(0, 0);
-				}
-				else if (a.Length() / 10 > players[i]->m_defender->defender_body->GetLinearVelocity().Length() && CoolDown < 5.f)
-				{
-					players[i]->m_defender->m_animation.setScale(players[i]->m_defender->m_animation.getScale().x*-1, 1.f);
-				}
-			}
-			else if (players[i]->m_defender->defender_body->GetLinearVelocity().x > 0)
-			{
-				players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
-				if (a.Length() < players[i]->m_defender->defender_body->GetLinearVelocity().Length())
+				players[i]->m_defender->m_animation.setScale(1, 1.f);
+				/*if (a.Length() < players[i]->m_defender->defender_body->GetLinearVelocity().Length())
 				{
 					a = b2Vec2(0, 0);
 				}
 				else if (a.Length() / 10 > players[i]->m_defender->defender_body->GetLinearVelocity().Length())
 				{
 					players[i]->m_defender->m_animation.setScale(players[i]->m_defender->m_animation.getScale().x*-1, 1.f);
+					
+				}*/
+			}
+			else if (players[i]->m_defender->defender_body->GetLinearVelocity().x > 0)
+			{
+				players[i]->m_defender->m_animation.setScale(-1, 1.f);
+				/*if (a.Length() < players[i]->m_defender->defender_body->GetLinearVelocity().Length())
+				{
+					a = b2Vec2(0, 0);
 				}
+				else if (a.Length() / 10 > players[i]->m_defender->defender_body->GetLinearVelocity().Length())
+				{
+					players[i]->m_defender->m_animation.setScale(players[i]->m_defender->m_animation.getScale().x*-1, 1.f);
+					
+					
+				}*/
 			}
 		}
 		window.draw(s_GUI);
@@ -995,8 +1033,21 @@ int main(int argc, char *argv[])
 			}
 		}
 		
-		
-		
+		//PARTICLES
+		partSys.update(clockP.restart());
+		if (Particle)
+		{
+			emitter.setParticleLifetime(sf::seconds(0.5f));
+			emitter.setParticlePosition(def_coll_pos);
+			emitter.setParticleVelocity(thor::Distributions::deflect(150.f*def_coll_dir, 45.f));
+			partSys.addEmitter(emitter, sf::seconds(0.25));
+			emitter.setParticlePosition(def_coll_pos);
+			emitter.setParticleVelocity(thor::Distributions::deflect(-150.f*def_coll_dir, 45.f));
+			partSys.addEmitter(emitter, sf::seconds(0.25));
+			Particle = false;
+			
+		}
+		window.draw(partSys);
 		window.display();
 	}
 	for (int i = 0; i < players.size(); i++)
