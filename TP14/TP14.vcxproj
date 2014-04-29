@@ -86,12 +86,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Audiosystem.cpp" />
+    <ClCompile Include="Box2DWorldDraw.cpp" />
     <ClCompile Include="FollowBall.cpp" />
     <ClCompile Include="linux_evdev.c" />
     <ClCompile Include="macosx_hidmanager.c" />
     <ClCompile Include="macosx_hidutilities.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="manymouse.c" />
+    <ClCompile Include="Physicshelper.cpp" />
     <ClCompile Include="returnhome.cpp" />
     <ClCompile Include="Stalker.cpp" />
     <ClCompile Include="windows_wminput.c" />
@@ -101,8 +103,10 @@
     <ClInclude Include="AudioSystem.h" />
     <ClInclude Include="AIStateMachine.h" />
     <ClInclude Include="AIStates.h" />
+    <ClInclude Include="Box2DWorldDraw.h" />
     <ClInclude Include="FollowBall.h" />
     <ClInclude Include="manymouse.hpp" />
+    <ClInclude Include="Physicshelper.h" />
     <ClInclude Include="raw_input.h" />
     <ClInclude Include="returnhome.h" />
     <ClInclude Include="Stalker.h" />

@@ -1,0 +1,90 @@
+﻿Build started 2014-04-21 20:16:18.
+     1>Project "C:\Users\Orre\Documents\Desktop\GitHub\Totemic2014Prototype\TP14\TP14.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"../deps/SFML-2.1/include" /I../deps/Thor/include /I../deps/Aurora /I../deps/Box2D /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt Audiosystem.cpp FollowBall.cpp main.cpp returnhome.cpp Stalker.cpp
+         Audiosystem.cpp
+     1>Audiosystem.cpp(62): warning C4244: 'argument' : conversion from 'float' to 'int', possible loss of data
+     1>Audiosystem.cpp(125): warning C4244: 'argument' : conversion from 'int' to 'float', possible loss of data
+     1>Audiosystem.cpp(191): warning C4018: '<' : signed/unsigned mismatch
+         FollowBall.cpp
+         main.cpp
+     1>main.cpp(524): warning C4305: '=' : truncation from 'double' to 'float32'
+     1>main.cpp(546): warning C4305: '=' : truncation from 'double' to 'float32'
+     1>main.cpp(873): warning C4018: '<' : signed/unsigned mismatch
+     1>main.cpp(1005): warning C4018: '<' : signed/unsigned mismatch
+     1>C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\xmemory0(600): warning C4244: 'argument' : conversion from 'int' to 'float', possible loss of data
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\xmemory0(723) : see reference to function template instantiation 'void std::allocator<_Ty>::construct<_Objty,int,int>(_Objty *,int &&,int &&)' being compiled
+                 with
+                 [
+                     _Ty=sf::Vector2f
+         ,            _Objty=sf::Vector2<float>
+                 ]
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\xmemory0(723) : see reference to function template instantiation 'void std::allocator<_Ty>::construct<_Objty,int,int>(_Objty *,int &&,int &&)' being compiled
+                 with
+                 [
+                     _Ty=sf::Vector2f
+         ,            _Objty=sf::Vector2<float>
+                 ]
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\xmemory0(872) : see reference to function template instantiation 'void std::allocator_traits<_Alloc>::construct<_Ty,int,int>(std::allocator<_Ty> &,_Objty *,int &&,int &&)' being compiled
+                 with
+                 [
+                     _Alloc=std::allocator<sf::Vector2f>
+         ,            _Ty=sf::Vector2<float>
+         ,            _Objty=sf::Vector2<float>
+                 ]
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\xmemory0(872) : see reference to function template instantiation 'void std::allocator_traits<_Alloc>::construct<_Ty,int,int>(std::allocator<_Ty> &,_Objty *,int &&,int &&)' being compiled
+                 with
+                 [
+                     _Alloc=std::allocator<sf::Vector2f>
+         ,            _Ty=sf::Vector2<float>
+         ,            _Objty=sf::Vector2<float>
+                 ]
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\vector(899) : see reference to function template instantiation 'void std::_Wrap_alloc<std::allocator<_Ty>>::construct<sf::Vector2<float>,int,int>(_Ty *,int &&,int &&)' being compiled
+                 with
+                 [
+                     _Ty=sf::Vector2f
+                 ]
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\vector(899) : see reference to function template instantiation 'void std::_Wrap_alloc<std::allocator<_Ty>>::construct<sf::Vector2<float>,int,int>(_Ty *,int &&,int &&)' being compiled
+                 with
+                 [
+                     _Ty=sf::Vector2f
+                 ]
+                 main.cpp(456) : see reference to function template instantiation 'void std::vector<sf::Vector2f,std::allocator<_Ty>>::emplace_back<int,int>(int &&,int &&)' being compiled
+                 with
+                 [
+                     _Ty=sf::Vector2f
+                 ]
+                 main.cpp(456) : see reference to function template instantiation 'void std::vector<sf::Vector2f,std::allocator<_Ty>>::emplace_back<int,int>(int &&,int &&)' being compiled
+                 with
+                 [
+                     _Ty=sf::Vector2f
+                 ]
+         returnhome.cpp
+         Stalker.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"../deps/SFML-2.1/include" /I../deps/Thor/include /I../deps/Aurora /I../deps/Box2D /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt linux_evdev.c macosx_hidmanager.c macosx_hidutilities.c manymouse.c windows_wminput.c x11_xinput2.c
+         linux_evdev.c
+         macosx_hidmanager.c
+         macosx_hidutilities.c
+         manymouse.c
+         windows_wminput.c
+         x11_xinput2.c
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Orre\Documents\Desktop\GitHub\Totemic2014Prototype\Release\TP14.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:../deps/Thor/lib /LIBPATH:"..\deps\SFML-2.1\lib\\" /LIBPATH:../deps/Box2D/lib/ "sfml-window.lib" "sfml-graphics.lib" "sfml-network.lib" "sfml-audio.lib" "sfml-system.lib" thor.lib Box2D.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Orre\Documents\Desktop\GitHub\Totemic2014Prototype\Release\TP14.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Orre\Documents\Desktop\GitHub\Totemic2014Prototype\Release\TP14.lib" /MACHINE:X86 /SAFESEH Release\Audiosystem.obj
+         Release\FollowBall.obj
+         Release\linux_evdev.obj
+         Release\macosx_hidmanager.obj
+         Release\macosx_hidutilities.obj
+         Release\main.obj
+         Release\manymouse.obj
+         Release\returnhome.obj
+         Release\Stalker.obj
+         Release\windows_wminput.obj
+         Release\x11_xinput2.obj
+         Generating code
+         Finished generating code
+         TP14.vcxproj -> C:\Users\Orre\Documents\Desktop\GitHub\Totemic2014Prototype\Release\TP14.exe
+     1>Done Building Project "C:\Users\Orre\Documents\Desktop\GitHub\Totemic2014Prototype\TP14\TP14.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:05.18

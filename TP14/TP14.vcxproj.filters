@@ -51,6 +51,12 @@
     <ClCompile Include="returnhome.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Physicshelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Box2DWorldDraw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="raw_input.h">
@@ -75,6 +81,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="returnhome.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Physicshelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Box2DWorldDraw.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

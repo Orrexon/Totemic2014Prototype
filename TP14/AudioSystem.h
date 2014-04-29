@@ -28,8 +28,8 @@ public:
 	int getMusicVolume();
 
 	void playSound(std::string identifier);
-	void playMusic(std::string identifier);
-	
+	void playMusic(std::string identifier, bool loop);
+
 	void update();
 
 private:

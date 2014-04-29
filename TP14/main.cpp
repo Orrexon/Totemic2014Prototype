@@ -27,13 +27,13 @@
 
 #include "Stalker.h"
 #include "Box2D\Dynamics\b2Fixture.h"
+#include "Box2DWorldDraw.h"
 class b2Fixture;
 
 //GLOBAL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-bool Particle = false;
-sf::Vector2f def_coll_pos = {0,0};
+sf::Vector2f def_coll_pos = { 0, 0 };
 sf::Vector2f def_coll_dir = { 0, 0 };
-
+sf::Vector2f deflect_coll_dir = { 0.f, 0.f };
 b2Vec2 gameToPhysicsUnits(sf::Vector2f p_unit)
 {
 	return b2Vec2(p_unit.x / 32.f, p_unit.y / 32.f);
@@ -97,11 +97,18 @@ struct PlayerEntity
 		m_link = link;
 	}
 	bool GathererIsHit = false;
+	bool Particle = false;
+	bool HasShield = false;
+	bool defenderDeflected = false;
+	bool Lightning = false;
+	bool stunned;
+	thor::StopWatch deflectiontimer;
 };
 struct Gatherer : public PlayerEntity
 {
 
 	sf::Sprite m_sprite;
+	sf::Sprite m_animation;
 
 };
 struct Defender : public PlayerEntity
@@ -109,6 +116,8 @@ struct Defender : public PlayerEntity
 	sf::Sprite m_sprite;
 	sf::Sprite m_animation;
 	b2Vec2 previousVel, currentVel, DVel;
+
+
 };
 struct Player
 {
@@ -130,6 +139,26 @@ struct Player
 
 };
 
+struct Shield
+{
+	sf::Sprite shieldSprite;
+	sf::CircleShape shieldShape;
+	float shieldRadius;
+	sf::Vector2f shieldPosition;
+	bool taken = false;
+	thor::StopWatch shieldTimer;
+};
+
+class Lightning
+{
+public:
+	sf::Sprite lightningSprite;
+	sf::CircleShape lightningShape;
+	float lightningRadius;
+	sf::Vector2f lightningPosition;
+	thor::StopWatch respawnTimer;
+	bool doDraw = true;
+};
 void SetStartingColors(std::vector<Player*> players, int value)
 {
 	int i = value;
@@ -184,26 +213,7 @@ Stalker* CreateStalker(b2World* world)
 	return stalker;
 }
 
-//sf::IntRect createObstackles(b2World* world)
-//{
-//	b2BodyDef bodyDef;
-//	bodyDef.position = gameToPhysicsUnits(stalker->shape.getPosition());
-//	bodyDef.type = b2_dynamicBody;
-//	bodyDef.linearDamping = 0.3f;
-//	bodyDef.userData = stalker;
-//	b2Body* body = world->CreateBody(&bodyDef);
-//
-//	b2CircleShape shape1;
-//	shape1.m_radius = gameToPhysicsUnits(stalker->shape.getRadius());
-//
-//	b2FixtureDef fixtureDef;
-//	fixtureDef.density = 1;
-//	fixtureDef.shape = &shape1;
-//	fixtureDef.friction = 0.3f;
-//	fixtureDef.restitution = 1;
-//	body->CreateFixture(&fixtureDef);
-//	stalker->body = body;
-//}
+
 
 void DefenderDirection(sf::Sprite);
 
@@ -239,7 +249,18 @@ class WorldContactListener : public b2ContactListener
 				if (playerA->m_link != playerB)
 				{
 					std::cout << "YOU ARE MY SWORN ENEMY!!!!!" << std::endl;
-					playerB->GathererIsHit = true;
+					if (!playerB->HasShield)
+					{
+						playerB->GathererIsHit = true;
+					}
+					else if (playerB->HasShield)
+					{
+						deflect_coll_dir = physicsToGameUnits(playerA->defender_body->GetWorldCenter() - playerB->gatherer_body->GetWorldCenter());
+						float lenght = sqrtf(deflect_coll_dir.x*deflect_coll_dir.x + deflect_coll_dir.y*deflect_coll_dir.y);
+						deflect_coll_dir /= lenght;
+						playerA->defenderDeflected = true;
+						playerA->deflectiontimer.restart();
+					}
 
 				}
 				else if (playerA->m_link == playerB)
@@ -253,7 +274,18 @@ class WorldContactListener : public b2ContactListener
 				if (playerB->m_link != playerA)
 				{
 					std::cout << "!!!!!!!!!!!!YOU ARE MY SWORN ENEMY!!!!!" << std::endl;
-					playerA->GathererIsHit = true;
+					if (!playerA->HasShield)
+					{
+						playerA->GathererIsHit = true;
+					}
+					else if (playerA->HasShield)
+					{
+						deflect_coll_dir = physicsToGameUnits(playerB->defender_body->GetWorldCenter() - playerA->gatherer_body->GetWorldCenter());
+						float lenght = sqrtf(deflect_coll_dir.x*deflect_coll_dir.x + deflect_coll_dir.y*deflect_coll_dir.y);
+						deflect_coll_dir /= lenght;
+						playerB->defenderDeflected = true;
+						playerB->deflectiontimer.restart();
+					}
 				}
 				else if (playerB->m_link == playerA)
 				{
@@ -262,8 +294,8 @@ class WorldContactListener : public b2ContactListener
 			}
 			else if (playerA->type == "defender" && playerB->type == "defender")
 			{
-				Particle = true;
-				def_coll_dir = physicsToGameUnits(playerB->defender_body->GetWorldCenter()-playerA->defender_body->GetWorldCenter());
+				playerA->Particle = true;
+				def_coll_dir = physicsToGameUnits(playerB->defender_body->GetWorldCenter() - playerA->defender_body->GetWorldCenter());
 				float Lenght = sqrtf(def_coll_dir.x*def_coll_dir.x + def_coll_dir.y*def_coll_dir.y);
 				def_coll_pos = physicsToGameUnits(playerA->defender_body->GetWorldCenter());
 				def_coll_dir /= Lenght;
@@ -272,7 +304,7 @@ class WorldContactListener : public b2ContactListener
 			}
 			else if (playerB->type == "defender" && playerA->type == "defender")
 			{
-				Particle = true;
+				playerB->Particle = true;
 				def_coll_dir = physicsToGameUnits(playerA->defender_body->GetWorldCenter() - playerB->defender_body->GetWorldCenter());
 				float Lenght = sqrtf(def_coll_dir.x*def_coll_dir.x + def_coll_dir.y*def_coll_dir.y);
 				def_coll_pos = physicsToGameUnits(playerB->defender_body->GetWorldCenter());
@@ -299,7 +331,8 @@ class WorldContactListener : public b2ContactListener
 	}
 };
 
-
+//FFW Declare
+float DefenderVelocity(b2Vec2 vel1, b2Vec2 vel2);
 
 int main(int argc, char *argv[])
 {
@@ -307,7 +340,7 @@ int main(int argc, char *argv[])
 	{
 		std::cout << "Argument " << i << ": " << argv[i] << std::endl;
 	}
-	
+
 
 	sf::Texture t;
 	t.loadFromFile("../d.psd");
@@ -325,6 +358,8 @@ int main(int argc, char *argv[])
 	//Sound & music
 	Audiosystem* audioSystem = new Audiosystem();
 	audioSystem->createSound("Ball_Contact", "../assets/sound/test.ogg");
+	audioSystem->createMusic("Music_one", "../assets/sound/mamaAfrica.wav");
+	audioSystem->playMusic("Music_one", true);
 
 	// load textures
 	sf::Texture cursor;
@@ -356,7 +391,7 @@ int main(int argc, char *argv[])
 
 	//font
 	sf::Font font; font.loadFromFile("../assets/BRLNSR.TTF");
-	sf::Vector2f redsText(10.f,580.f);
+	sf::Vector2f redsText(10.f, 580.f);
 	sf::Vector2f bluesText(10.f, 810.f);
 	sf::Vector2f yellowsText(10.f, 350.f);
 	sf::Vector2f purplesText(10.f, 100.f);
@@ -392,6 +427,7 @@ int main(int argc, char *argv[])
 
 	std::vector<sf::Sprite> g_sprites;
 	std::vector<sf::Sprite> d_sprites;
+	
 	//the sprites
 	sf::Sprite s_red_g = sf::Sprite(red_g);
 	sf::Sprite s_red_d = sf::Sprite(red_d);
@@ -424,10 +460,10 @@ int main(int argc, char *argv[])
 	sf::Texture texture1;
 	sf::Texture texture2;
 	sf::Texture texture3;
-	texture.loadFromFile("../assets/png/def_red.png",sf::IntRect(0,0,1024,128 ));
-	texture1.loadFromFile("../assets/png/def_blue.png", sf::IntRect(0, 0, 1024, 128));
-	texture2.loadFromFile("../assets/png/def_yellow.png", sf::IntRect(0, 0, 1024, 128));
-	texture3.loadFromFile("../assets/png/def_purple.png", sf::IntRect(0, 0, 1024, 128));
+	texture.loadFromFile("../assets/png/def_red.png", sf::IntRect(0, 0, 1792, 256));
+	texture1.loadFromFile("../assets/png/def_blue.png", sf::IntRect(0, 0, 1792, 256));
+	texture2.loadFromFile("../assets/png/def_yellow.png", sf::IntRect(0, 0, 1792, 256));
+	texture3.loadFromFile("../assets/png/def_purple.png", sf::IntRect(0, 0, 1792, 256));
 	sf::Sprite red_ani(texture);
 	sf::Sprite blue_ani(texture1);
 	sf::Sprite yellow_ani(texture2);
@@ -440,19 +476,60 @@ int main(int argc, char *argv[])
 	animatedSprites.push_back(purple_ani);
 
 	thor::FrameAnimation move;
-	
-	move.addFrame(0.1f, sf::IntRect(0, 0, 128, 128));
-	move.addFrame(0.1f, sf::IntRect(129, 0, 128, 128));
-	move.addFrame(0.1f, sf::IntRect(258, 0, 128, 128));
-	move.addFrame(0.1f, sf::IntRect(387, 0, 128, 128));
-	move.addFrame(0.1f, sf::IntRect(516, 0, 128, 128));
-	move.addFrame(0.1f, sf::IntRect(645, 0, 128, 128));
-	move.addFrame(0.1f, sf::IntRect(774, 0, 128, 128));
-	move(red_ani, 0.1f);
+
+	move.addFrame(0.1f, sf::IntRect(0, 0, 256, 256));
+	move.addFrame(0.1f, sf::IntRect(256 + 1, 0, 256, 256));
+	move.addFrame(0.1f, sf::IntRect(256 * 2 + 1, 0, 256, 256));
+	move.addFrame(0.1f, sf::IntRect(256 * 3 + 1, 0, 256, 256));
+	move.addFrame(0.1f, sf::IntRect(256 * 4 + 1, 0, 256, 256));
+	move.addFrame(0.1f, sf::IntRect(256 * 5 + 1, 0, 256, 256));
+	move.addFrame(0.1f, sf::IntRect(256 * 6 + 1, 0, 256, 256));
 	thor::Animator<sf::Sprite, std::string> animation;
 	animation.addAnimation("move", move, sf::seconds(0.5f));
 	animation.playAnimation("move", true);
-	
+
+	//Gatherer Animations
+	sf::Clock g_clock;
+	sf::Texture gtexture;
+	sf::Texture gtexture1;
+	sf::Texture gtexture2;
+	sf::Texture gtexture3;
+	gtexture.loadFromFile("../assets/png/g_red.png", sf::IntRect(0, 0, 1532, 128));
+	gtexture1.loadFromFile("../assets/png/g_blue.png", sf::IntRect(0, 0, 1532, 128));
+	gtexture2.loadFromFile("../assets/png/g_yellow.png", sf::IntRect(0, 0, 1532, 128));
+	gtexture3.loadFromFile("../assets/png/g_purple.png", sf::IntRect(0, 0, 1532, 128));
+	sf::Sprite gred_ani(gtexture);
+	sf::Sprite gblue_ani(gtexture1);
+	sf::Sprite gyellow_ani(gtexture2);
+	sf::Sprite gpurple_ani(gtexture3);
+
+	std::vector<sf::Sprite> ganimatedSprites;
+	ganimatedSprites.push_back(gred_ani);
+	ganimatedSprites.push_back(gblue_ani);
+	ganimatedSprites.push_back(gyellow_ani);
+	ganimatedSprites.push_back(gpurple_ani);
+
+	thor::FrameAnimation gmove;
+
+	gmove.addFrame(0.04f, sf::IntRect(0, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(129, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(258, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(387, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(516, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(645, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(774, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(903, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(1032, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(1161, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(1290, 0, 128, 128));
+	gmove.addFrame(0.04f, sf::IntRect(1419, 0, 128, 128));
+
+
+	thor::Animator<sf::Sprite, std::string> ganimation;
+	ganimation.addAnimation("gmove", gmove, sf::seconds(1.f));
+	ganimation.playAnimation("gmove", true);
+
+
 	//Particles
 	sf::Texture particleTex;
 	particleTex.loadFromFile("../assets/png/defender_collision.png", sf::IntRect(0, 0, 8, 8));
@@ -460,11 +537,26 @@ int main(int argc, char *argv[])
 	partSys.setTexture(particleTex);
 
 	thor::UniversalEmitter emitter;
-	emitter.setEmissionRate(25);
-	
-	
-
 	sf::Clock clockP;
+
+	//shield
+	Shield shield;
+	shield.shieldPosition = sf::Vector2f(thor::random(200, 1800), thor::random(200, 900));
+	shield.shieldRadius = 50.f;
+	shield.shieldShape = sf::CircleShape(50);
+	shield.shieldShape.setOrigin(shield.shieldRadius, shield.shieldRadius);
+	shield.shieldShape.setFillColor(sf::Color::Cyan);
+	shield.shieldShape.setPosition(shield.shieldPosition);
+
+	//Lightning
+	Lightning lightning;
+	lightning.lightningPosition = sf::Vector2f(thor::random(200, 1800), thor::random(200, 900));
+	lightning.lightningRadius = 50.f;
+	lightning.lightningShape = sf::CircleShape(lightning.lightningRadius);
+	lightning.lightningShape.setOrigin(lightning.lightningRadius, lightning.lightningRadius);
+	lightning.lightningShape.setPosition(lightning.lightningPosition);
+	lightning.lightningShape.setFillColor(sf::Color::Magenta);
+
 	// Physics world
 	b2Vec2 gravity(0.0f, 0.0f);
 	b2World* world = new b2World(gravity);
@@ -525,7 +617,7 @@ int main(int argc, char *argv[])
 		player->m_defender->m_sprite = d_sprites[i];
 		player->m_defender->m_sprite.setOrigin(player->m_defender->m_sprite.getGlobalBounds().width / 2, player->m_defender->m_sprite.getGlobalBounds().height / 2);
 		player->m_defender->m_animation = animatedSprites[i];
-		player->m_defender->m_animation.setOrigin(128 / 2, 128 / 2);
+		player->m_defender->m_animation.setOrigin(128, 160);
 
 		player->m_gatherer->gatherer.setFillColor(sf::Color::Green);
 		player->m_gatherer->gatherer.setRadius(15.f);
@@ -535,6 +627,8 @@ int main(int argc, char *argv[])
 		player->m_gatherer->m_sprite = g_sprites[i];
 		player->m_gatherer->m_sprite.setOrigin(player->m_gatherer->m_sprite.getGlobalBounds().width / 2
 			, player->m_gatherer->m_sprite.getGlobalBounds().top + player->m_gatherer->m_sprite.getGlobalBounds().height / 2);
+		player->m_gatherer->m_animation = ganimatedSprites[i];
+		player->m_gatherer->m_animation.setOrigin(128 / 2, 128 / 2);
 
 		player->m_gatherer->type = "gatherer";
 		//player->m_gatherer->gatherer = player->gatherer;
@@ -634,6 +728,7 @@ int main(int argc, char *argv[])
 	sf::Clock m_Clock;
 	while (window.isOpen())
 	{
+
 		sf::Time m_TimeSinceLastUpdate = sf::Time::Zero;
 		m_TimeSinceLastUpdate += m_Clock.restart();
 
@@ -643,39 +738,58 @@ int main(int argc, char *argv[])
 		{
 			fDeltaTime = 0.1f;
 		}
-		CoolDown += fDeltaTime;
+		//CoolDown += fDeltaTime;
 		//std::cout << fDeltaTime << std::endl;
+
 		
+
 		for (auto player : players)
 		{
 			b2Vec2 velo(player->m_gatherer->gatherer_body->GetLinearVelocity().x *0.89f,
 				player->m_gatherer->gatherer_body->GetLinearVelocity().y *0.89f);
 			player->m_gatherer->gatherer_body->SetLinearVelocity(velo);
 		}
-		/*for (auto i: players)
-		{
-			i->m_defender->previousVel = i->m_defender->currentVel;
 
-		}*/
 		audioSystem->update();
 		world->Step(1 / 60.f, 8, 3);
-		//DELTAVELOCITY
-		/*for (auto i : players)
-		{
-			i->m_defender->currentVel = i->m_defender->defender_body->GetLinearVelocity();
-			i->m_defender->DVel = i->m_defender->currentVel - i->m_defender->previousVel;
-
-		}*/
 		actionMap.update(window);
 		actionMap2.update(window);
-		/*for (int i = 0; i < numDevices; i++)
+		for (auto i : players)
 		{
-		players[i]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
-		}*/
+			i->m_defender->currentVel = i->m_defender->defender_body->GetLinearVelocity();
+		}
+		
+		//Shield
+		for (auto player : players)
+		{
+			float distance = std::sqrtf(
+				(player->m_gatherer->gatherer.getPosition().x - shield.shieldShape.getPosition().x) *
+				(player->m_gatherer->gatherer.getPosition().x - shield.shieldShape.getPosition().x) +
+				(player->m_gatherer->gatherer.getPosition().y - shield.shieldShape.getPosition().y) *
+				(player->m_gatherer->gatherer.getPosition().y - shield.shieldShape.getPosition().y));
+			if (distance <= shield.shieldShape.getRadius())
+			{
+				shield.taken = true;
+				player->m_gatherer->HasShield = true;
+			}
+		}
 
+		//Lightning
+		for (auto player : players)
+		{
+			float distance = std::sqrtf(
+				(player->m_gatherer->gatherer.getPosition().x - lightning.lightningShape.getPosition().x) *
+				(player->m_gatherer->gatherer.getPosition().x - lightning.lightningShape.getPosition().x) +
+				(player->m_gatherer->gatherer.getPosition().y - lightning.lightningShape.getPosition().y) *
+				(player->m_gatherer->gatherer.getPosition().y - lightning.lightningShape.getPosition().y));
+			if (distance <= lightning.lightningShape.getRadius())
+			{
+				
+				lightning.respawnTimer.restart();
+				lightning.doDraw = false;
+			}
+		}
 		ManyMouseEvent event;
-
-
 		while (ManyMouse_PollEvent(&event))
 		{
 			Player* player = players[event.device];
@@ -760,9 +874,9 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
-		
 
-		
+
+
 		// Cap the speed to max speed for all pla5yers
 		for (auto &player : players)
 		{
@@ -801,7 +915,7 @@ int main(int argc, char *argv[])
 			{
 				player->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(player->m_gatherer->gatherer_body->GetLinearVelocity().x, -MAX_VELOCITY_GATHERER.y));
 			}
-			
+
 		}
 		///////////
 		//TESTING//
@@ -809,7 +923,7 @@ int main(int argc, char *argv[])
 		if (actionMap.isActive("stalker"))
 		{
 			stalker->body->SetTransform(b2Vec2(30.f, 10.f), 0);
-			
+
 		}
 		stalker->shape.setPosition(physicsToGameUnits(stalker->body->GetPosition()));
 
@@ -823,7 +937,7 @@ int main(int argc, char *argv[])
 
 		for (auto &player : players)
 		{
-			
+
 			player->m_defender->defender.setPosition(physicsToGameUnits(player->m_defender->defender_body->GetPosition()));
 			player->m_gatherer->gatherer.setPosition(physicsToGameUnits(player->m_gatherer->gatherer_body->GetPosition()));
 
@@ -856,10 +970,10 @@ int main(int argc, char *argv[])
 							{
 								it2->timer.stop();
 							}
-							
+
 						}
 					}
-					
+
 				}
 				else
 				{
@@ -916,71 +1030,95 @@ int main(int argc, char *argv[])
 		{
 			if (i->m_gatherer->GathererIsHit)
 			{
-				
-				i->m_gatherer->gatherer_body->SetTransform(i->m_gatherer->m_respawn_pos,0);
+
+				i->m_gatherer->gatherer_body->SetTransform(i->m_gatherer->m_respawn_pos, 0);
 				i->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
 				i->m_gatherer->GathererIsHit = false;
 			}
 		}
+
+		//ShieldDeflection
+		for (auto player : players)
+		{
+			if (player->m_defender->defenderDeflected)
+			{
+				player->m_defender->defender_body->ApplyLinearImpulse(500 * gameToPhysicsUnits(deflect_coll_dir), player->m_defender->defender_body->GetWorldCenter(), true);
+				if (player->m_defender->deflectiontimer.getElapsedTime().asSeconds() > 1.5f)
+				{
+					player->m_defender->defenderDeflected = false;
+				}
+
+			}
+		}
+
+		//turning
 		for (int i = 0; i < numDevices; ++i)
 		{
+			if (players[i]->m_gatherer->gatherer_body->GetLinearVelocity().x > 0)
+			{
+				players[i]->m_gatherer->m_animation.setScale(-1.f, 1.f);
+			}
+			else if (players[i]->m_gatherer->gatherer_body->GetLinearVelocity().x < 0)
+			{
+				players[i]->m_gatherer->m_animation.setScale(1.f, 1.f);
+			}
 			//b2Vec2 a = { players[i]->m_defender->DVel.x / fDeltaTime, players[i]->m_defender->DVel.y / fDeltaTime };
-				
+
 			/*b2Vec2 vector = gameToPhysicsUnits(sf::Mouse::getPosition()) - players[i]->m_defender->defender_body->GetPosition();
 			float angle = atan2f(vector.y, vector.x);
 			if (angle <0)
 			{
-				red_ani.setScale(-1.f, 1.f);
+			red_ani.setScale(-1.f, 1.f);
 			}
 			else
 			{
-				red_ani.setScale(1.f, 1.f);
+			red_ani.setScale(1.f, 1.f);
 			}*/
-			
+
 			/*if (players[i]->m_defender->currentVel.x >= 0 )
 			{
-				players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
-				if (a.x < -10 )
-				{
-					players[i]->m_defender->m_animation.setScale(1.f, 1.f);
-				}
+			players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
+			if (a.x < -10 )
+			{
+			players[i]->m_defender->m_animation.setScale(1.f, 1.f);
+			}
 			}
 			else if (players[i]->m_defender->currentVel.x <= 0 )
 			{
-				players[i]->m_defender->m_animation.setScale(1.f, 1.f);
-				if (a.x > 10 )
-				{
-					players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
-				}*/
+			players[i]->m_defender->m_animation.setScale(1.f, 1.f);
+			if (a.x > 10 )
+			{
+			players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
+			}*/
 			//}
 			/*if (a.x > 0 && players[i]->m_defender->currentVel.x >= 0)
 			{
-				players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
+			players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
 			}
 			else if (a.x < 0 && players[i]->m_defender->currentVel.x >= 0)
 			{
-				players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
+			players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
 			}
 			else if (a.x < 0 && players[i]->m_defender->currentVel.x <= 0)
 			{
-				players[i]->m_defender->m_animation.setScale(1.f, 1.f);
+			players[i]->m_defender->m_animation.setScale(1.f, 1.f);
 			}
 			else if (a.x > 0 && players[i]->m_defender->currentVel.x <= 0)
 			{
-				players[i]->m_defender->m_animation.setScale(1.f, 1.f);
+			players[i]->m_defender->m_animation.setScale(1.f, 1.f);
 			}*/
-			
+
 			if (players[i]->m_defender->defender_body->GetLinearVelocity().x < 0)
 			{
 				players[i]->m_defender->m_animation.setScale(1, 1.f);
 				/*if (a.Length() < players[i]->m_defender->defender_body->GetLinearVelocity().Length())
 				{
-					a = b2Vec2(0, 0);
+				a = b2Vec2(0, 0);
 				}
 				else if (a.Length() / 10 > players[i]->m_defender->defender_body->GetLinearVelocity().Length())
 				{
-					players[i]->m_defender->m_animation.setScale(players[i]->m_defender->m_animation.getScale().x*-1, 1.f);
-					
+				players[i]->m_defender->m_animation.setScale(players[i]->m_defender->m_animation.getScale().x*-1, 1.f);
+
 				}*/
 			}
 			else if (players[i]->m_defender->defender_body->GetLinearVelocity().x > 0)
@@ -988,13 +1126,13 @@ int main(int argc, char *argv[])
 				players[i]->m_defender->m_animation.setScale(-1, 1.f);
 				/*if (a.Length() < players[i]->m_defender->defender_body->GetLinearVelocity().Length())
 				{
-					a = b2Vec2(0, 0);
+				a = b2Vec2(0, 0);
 				}
 				else if (a.Length() / 10 > players[i]->m_defender->defender_body->GetLinearVelocity().Length())
 				{
-					players[i]->m_defender->m_animation.setScale(players[i]->m_defender->m_animation.getScale().x*-1, 1.f);
-					
-					
+				players[i]->m_defender->m_animation.setScale(players[i]->m_defender->m_animation.getScale().x*-1, 1.f);
+
+
 				}*/
 			}
 		}
@@ -1012,42 +1150,107 @@ int main(int argc, char *argv[])
 			ss << ftime;
 			std::string s(ss.str());
 			sf::String string(s);
-			sf::Text text( sf::Text(string,font));
+			sf::Text text(sf::Text(string, font));
 			text.setPosition(player->m_gatherer->m_textposition);
 			window.draw(text);
 			//window.draw(player->m_defender->defender);
 			window.draw(player->m_gatherer->gatherer);
-			window.draw(player->m_gatherer->m_sprite);
+			//window.draw(player->m_gatherer->m_sprite);
 			//window.draw(player->m_defender->m_sprite);
 		}
-		
+
 		for (int i = 0; i < numDevices; i++)
 		{
 			players[i]->m_defender->m_animation.setPosition(physicsToGameUnits(players[i]->m_defender->defender_body->GetPosition()));
+			players[i]->m_gatherer->m_animation.setPosition(physicsToGameUnits(players[i]->m_gatherer->gatherer_body->GetPosition()));
 			for (int j = 0; j < 7; j++)
 			{
 				animation.update(clock.restart());
-
 				animation.animate(players[i]->m_defender->m_animation);
 				window.draw(players[i]->m_defender->m_animation);
+				ganimation.update(g_clock.restart());
+				ganimation.animate(players[i]->m_gatherer->m_animation);
+				window.draw(players[i]->m_gatherer->m_animation);
 			}
 		}
-		
+
 		//PARTICLES
 		partSys.update(clockP.restart());
-		if (Particle)
+		for (int i = 0; i < numDevices; i++)
 		{
-			emitter.setParticleLifetime(sf::seconds(0.5f));
-			emitter.setParticlePosition(def_coll_pos);
-			emitter.setParticleVelocity(thor::Distributions::deflect(150.f*def_coll_dir, 45.f));
-			partSys.addEmitter(emitter, sf::seconds(0.25));
-			emitter.setParticlePosition(def_coll_pos);
-			emitter.setParticleVelocity(thor::Distributions::deflect(-150.f*def_coll_dir, 45.f));
-			partSys.addEmitter(emitter, sf::seconds(0.25));
-			Particle = false;
+			for (int j = i + 1; j < numDevices; j++)
+			{
+				if (players[i]->m_defender->Particle || players[j]->m_defender->Particle)
+				{
+
+					emitter.setEmissionRate(DefenderVelocity(players[i]->m_defender->currentVel, players[j]->m_defender->currentVel) * 3);
+					emitter.setParticleLifetime(sf::seconds(0.5f));
+					emitter.setParticlePosition(def_coll_pos);
+					emitter.setParticleVelocity(thor::Distributions::deflect(300.f*def_coll_dir, 45.f));
+					partSys.addEmitter(emitter, sf::seconds(0.1));
+
+					emitter.setParticlePosition(def_coll_pos);
+					emitter.setParticleVelocity(thor::Distributions::deflect(-300.f*def_coll_dir, 45.f));
+					partSys.addEmitter(emitter, sf::seconds(0.1));
+
+					players[i]->m_defender->Particle = false;
+
+
+				}
+			}
+		}
+		if (shield.taken)
+		{
+			if (!shield.shieldTimer.isRunning())
+			{
+				shield.shieldTimer.restart();
+			}
+			for (int i = 0; i < numDevices; i++)
+			{
+				if (players[i]->m_gatherer->HasShield)
+				{
+					shield.shieldPosition = players[i]->m_gatherer->gatherer.getPosition();
+
+				}
+			}
+			if (shield.shieldTimer.getElapsedTime().asSeconds() > 5)
+			{
+				shield.taken = false;
+				shield.shieldTimer.stop();
+				for (auto it : players)
+				{
+					if (it->m_gatherer->HasShield)
+					{
+						it->m_gatherer->HasShield = false;
+					}
+				}
+				shield.shieldPosition = sf::Vector2f(thor::random(100, 1800), thor::random(100, 1000));
+
+			}
+
+		}
+
+
+		shield.shieldShape.setPosition(shield.shieldPosition);
+		window.draw(shield.shieldShape);
+		if (lightning.respawnTimer.getElapsedTime().asSeconds() > 3.f)
+		{
+			lightning.respawnTimer.stop();
+			lightning.doDraw = true;
 			
 		}
+		if (lightning.doDraw)
+		{
+			window.draw(lightning.lightningShape);
+		}
+		
 		window.draw(partSys);
+
+		//Debugdraw
+		Box2DWorldDraw debugDraw(&window);
+		debugDraw.SetFlags(b2Draw::e_shapeBit);
+		world->SetDebugDraw(&debugDraw);
+		world->DrawDebugData();
 		window.display();
 	}
 	for (int i = 0; i < players.size(); i++)
@@ -1060,7 +1263,7 @@ int main(int argc, char *argv[])
 	ManyMouse_Quit();
 }
 
-void DefenderDirection(sf::Sprite)
+float DefenderVelocity(b2Vec2 vel1, b2Vec2 vel2)
 {
-
+	return vel1.Length() + vel2.Length();
 }

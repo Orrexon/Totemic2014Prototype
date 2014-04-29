@@ -164,7 +164,7 @@ void Audiosystem::playSound(std::string identifier)
 	it->second->play();
 }
 
-void Audiosystem::playMusic(std::string identifier)
+void Audiosystem::playMusic(std::string identifier,bool loop)
 {
 	auto it = m_music.find(identifier);
 	if (it == m_music.end())
@@ -174,7 +174,10 @@ void Audiosystem::playMusic(std::string identifier)
 	}
 
 	it->second->play();
+	it->second->setLoop(loop);
 }
+
+
 
 void Audiosystem::update()
 {
