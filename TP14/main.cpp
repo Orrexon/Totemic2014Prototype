@@ -461,31 +461,6 @@ int main(int argc, char *argv[])
 	textpositions.push_back(yellowsText);
 	textpositions.push_back(purplesText);
 
-	//Red gatherer and defender
-	sf::Texture red_g = sf::Texture();
-	sf::Texture red_d = sf::Texture();
-	red_g.loadFromFile("../assets/png/red_g.png", sf::IntRect(0, 0, 163, 164));
-	red_d.loadFromFile("../assets/png/red_d.png", sf::IntRect(0, 0, 315, 336));
-
-	//blue gatherer and defender
-	sf::Texture blue_g = sf::Texture();
-	sf::Texture blue_d = sf::Texture();
-	blue_g.loadFromFile("../assets/png/blue_g.png", sf::IntRect(0, 0, 163, 164));
-	blue_d.loadFromFile("../assets/png/blue_d.png", sf::IntRect(0, 0, 315, 336));
-
-	//yellow gatherer and defender
-	sf::Texture yellow_g = sf::Texture();
-	sf::Texture yellow_d = sf::Texture();
-	yellow_g.loadFromFile("../assets/png/yellow_tiny.png", sf::IntRect(0, 0, 163, 164));
-	yellow_d.loadFromFile("../assets/png/yellow.png", sf::IntRect(0, 0, 315, 336));
-
-	//purple gatherer and defender
-	sf::Texture purple_g = sf::Texture();
-	sf::Texture purple_d = sf::Texture();
-	purple_g.loadFromFile("../assets/png/purple_g.png", sf::IntRect(0, 0, 163, 164));
-	purple_d.loadFromFile("../assets/png/purple_d.png", sf::IntRect(0, 0, 315, 336));
-
-
 	//Animations
 	sf::Clock clock;
 	sf::Texture texture;
