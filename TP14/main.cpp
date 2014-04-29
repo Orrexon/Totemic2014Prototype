@@ -147,7 +147,24 @@ struct Shield
 	sf::Vector2f shieldPosition;
 	bool taken = false;
 	thor::StopWatch shieldTimer;
+	void updateShield(std::vector<Player*>);
 };
+void Shield::updateShield(std::vector<Player*> players)
+{
+	for (auto player : players)
+	{
+		float distance = std::sqrtf(
+			(player->m_gatherer->gatherer.getPosition().x - shieldShape.getPosition().x) *
+			(player->m_gatherer->gatherer.getPosition().x - shieldShape.getPosition().x) +
+			(player->m_gatherer->gatherer.getPosition().y - shieldShape.getPosition().y) *
+			(player->m_gatherer->gatherer.getPosition().y - shieldShape.getPosition().y));
+		if (distance <= shieldShape.getRadius())
+		{
+			taken = true;
+			player->m_gatherer->HasShield = true;
+		}
+	}
+}
 
 class Lightning
 {
@@ -158,9 +175,34 @@ public:
 	sf::Vector2f lightningPosition;
 	thor::StopWatch respawnTimer;
 	bool doDraw = true;
+	void updateLightning(std::vector<Player*>);
 	void stun(PlayerEntity& one);
 	void respawn();
 };
+void Lightning::updateLightning(std::vector<Player*> players)
+{
+	for (auto player : players)
+	{
+		float distance = std::sqrtf(
+			(player->m_gatherer->gatherer.getPosition().x - lightningShape.getPosition().x) *
+			(player->m_gatherer->gatherer.getPosition().x - lightningShape.getPosition().x) +
+			(player->m_gatherer->gatherer.getPosition().y - lightningShape.getPosition().y) *
+			(player->m_gatherer->gatherer.getPosition().y - lightningShape.getPosition().y));
+		if (distance <= lightningShape.getRadius())
+		{
+			player->m_gatherer->Lightning = true;
+			respawnTimer.restart();
+			doDraw = false;
+			for (auto player : players)
+			{
+				if (!player->m_gatherer->Lightning)
+				{
+					stun(*player->m_gatherer);
+				}
+			}
+		}
+	}
+}
 void Lightning::stun(PlayerEntity& one)
 {
 	one.stunned = true;
@@ -778,42 +820,10 @@ int main(int argc, char *argv[])
 		}
 
 		//Shield
-		for (auto player : players)
-		{
-			float distance = std::sqrtf(
-				(player->m_gatherer->gatherer.getPosition().x - shield.shieldShape.getPosition().x) *
-				(player->m_gatherer->gatherer.getPosition().x - shield.shieldShape.getPosition().x) +
-				(player->m_gatherer->gatherer.getPosition().y - shield.shieldShape.getPosition().y) *
-				(player->m_gatherer->gatherer.getPosition().y - shield.shieldShape.getPosition().y));
-			if (distance <= shield.shieldShape.getRadius())
-			{
-				shield.taken = true;
-				player->m_gatherer->HasShield = true;
-			}
-		}
+		shield.updateShield(players);
 
 		//Lightning
-		for (auto player : players)
-		{
-			float distance = std::sqrtf(
-				(player->m_gatherer->gatherer.getPosition().x - lightning.lightningShape.getPosition().x) *
-				(player->m_gatherer->gatherer.getPosition().x - lightning.lightningShape.getPosition().x) +
-				(player->m_gatherer->gatherer.getPosition().y - lightning.lightningShape.getPosition().y) *
-				(player->m_gatherer->gatherer.getPosition().y - lightning.lightningShape.getPosition().y));
-			if (distance <= lightning.lightningShape.getRadius())
-			{
-				player->m_gatherer->Lightning = true;
-				lightning.respawnTimer.restart();
-				lightning.doDraw = false;
-				for (auto player : players)
-				{
-					if (!player->m_gatherer->Lightning)
-					{
-						lightning.stun(*player->m_gatherer);
-					}
-				}
-			}
-		}
+		lightning.updateLightning(players);
 
 		ManyMouseEvent event;
 		while (ManyMouse_PollEvent(&event))
