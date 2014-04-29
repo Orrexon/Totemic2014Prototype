@@ -175,10 +175,20 @@ public:
 	sf::Vector2f lightningPosition;
 	thor::StopWatch respawnTimer;
 	bool doDraw = true;
+	void initialize();
 	void updateLightning(std::vector<Player*>);
 	void stun(PlayerEntity& one);
 	void respawn();
 };
+void Lightning::initialize()
+{
+	lightningPosition = sf::Vector2f(thor::random(200, 1800), thor::random(200, 900));
+	lightningRadius = 50.f;
+	lightningShape = sf::CircleShape(lightningRadius);
+	lightningShape.setOrigin(lightningRadius, lightningRadius);
+	lightningShape.setPosition(lightningPosition);
+	lightningShape.setFillColor(sf::Color::Magenta);
+}
 void Lightning::updateLightning(std::vector<Player*> players)
 {
 	for (auto player : players)
@@ -557,12 +567,7 @@ int main(int argc, char *argv[])
 
 	//Lightning
 	Lightning lightning;
-	lightning.lightningPosition = sf::Vector2f(thor::random(200, 1800), thor::random(200, 900));
-	lightning.lightningRadius = 50.f;
-	lightning.lightningShape = sf::CircleShape(lightning.lightningRadius);
-	lightning.lightningShape.setOrigin(lightning.lightningRadius, lightning.lightningRadius);
-	lightning.lightningShape.setPosition(lightning.lightningPosition);
-	lightning.lightningShape.setFillColor(sf::Color::Magenta);
+	lightning.initialize();
 
 	// Physics world
 	b2Vec2 gravity(0.0f, 0.0f);
