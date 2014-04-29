@@ -147,8 +147,18 @@ struct Shield
 	sf::Vector2f shieldPosition;
 	bool taken = false;
 	thor::StopWatch shieldTimer;
+	void initialize();
 	void updateShield(std::vector<Player*>);
 };
+void Shield::initialize()
+{
+	shieldPosition = sf::Vector2f(thor::random(200, 1800), thor::random(200, 900));
+	shieldRadius = 50.f;
+	shieldShape = sf::CircleShape(50);
+	shieldShape.setOrigin(shieldRadius, shieldRadius);
+	shieldShape.setFillColor(sf::Color::Cyan);
+	shieldShape.setPosition(shieldPosition);
+}
 void Shield::updateShield(std::vector<Player*> players)
 {
 	for (auto player : players)
@@ -249,6 +259,23 @@ void SetStartingColors(std::vector<Player*> players, int value)
 		players[3]->m_defender->defender.setFillColor(players[3]->m_gatherer->gatherer.getFillColor());
 	}
 }
+
+
+class Slow
+{
+public:
+	sf::Sprite slowSprite;
+	sf::CircleShape slowShape;
+	float slowRadius;
+	sf::Vector2f slowPosition;
+	thor::StopWatch respawnTimer;
+	void initialize();
+	void updateSlow(std::vector<Player*>);
+};
+void Slow::initialize()
+{}
+void Slow::updateSlow(std::vector<Player*> players)
+{}
 
 Stalker* CreateStalker(b2World* world)
 {
@@ -558,12 +585,7 @@ int main(int argc, char *argv[])
 
 	//shield
 	Shield shield;
-	shield.shieldPosition = sf::Vector2f(thor::random(200, 1800), thor::random(200, 900));
-	shield.shieldRadius = 50.f;
-	shield.shieldShape = sf::CircleShape(50);
-	shield.shieldShape.setOrigin(shield.shieldRadius, shield.shieldRadius);
-	shield.shieldShape.setFillColor(sf::Color::Cyan);
-	shield.shieldShape.setPosition(shield.shieldPosition);
+	shield.initialize();
 
 	//Lightning
 	Lightning lightning;
