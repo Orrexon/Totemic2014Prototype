@@ -947,78 +947,17 @@ int main(int argc, char *argv[])
 			{
 				players[i]->m_gatherer->m_animation.setScale(1.f, 1.f);
 			}
-			//b2Vec2 a = { players[i]->m_defender->DVel.x / fDeltaTime, players[i]->m_defender->DVel.y / fDeltaTime };
-
-			/*b2Vec2 vector = gameToPhysicsUnits(sf::Mouse::getPosition()) - players[i]->m_defender->defender_body->GetPosition();
-			float angle = atan2f(vector.y, vector.x);
-			if (angle <0)
-			{
-			red_ani.setScale(-1.f, 1.f);
-			}
-			else
-			{
-			red_ani.setScale(1.f, 1.f);
-			}*/
-
-			/*if (players[i]->m_defender->currentVel.x >= 0 )
-			{
-			players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
-			if (a.x < -10 )
-			{
-			players[i]->m_defender->m_animation.setScale(1.f, 1.f);
-			}
-			}
-			else if (players[i]->m_defender->currentVel.x <= 0 )
-			{
-			players[i]->m_defender->m_animation.setScale(1.f, 1.f);
-			if (a.x > 10 )
-			{
-			players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
-			}*/
-			//}
-			/*if (a.x > 0 && players[i]->m_defender->currentVel.x >= 0)
-			{
-			players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
-			}
-			else if (a.x < 0 && players[i]->m_defender->currentVel.x >= 0)
-			{
-			players[i]->m_defender->m_animation.setScale(-1.f, 1.f);
-			}
-			else if (a.x < 0 && players[i]->m_defender->currentVel.x <= 0)
-			{
-			players[i]->m_defender->m_animation.setScale(1.f, 1.f);
-			}
-			else if (a.x > 0 && players[i]->m_defender->currentVel.x <= 0)
-			{
-			players[i]->m_defender->m_animation.setScale(1.f, 1.f);
-			}*/
+			
 
 			if (players[i]->m_defender->defender_body->GetLinearVelocity().x < 0)
 			{
 				players[i]->m_defender->m_animation.setScale(1, 1.f);
-				/*if (a.Length() < players[i]->m_defender->defender_body->GetLinearVelocity().Length())
-				{
-				a = b2Vec2(0, 0);
-				}
-				else if (a.Length() / 10 > players[i]->m_defender->defender_body->GetLinearVelocity().Length())
-				{
-				players[i]->m_defender->m_animation.setScale(players[i]->m_defender->m_animation.getScale().x*-1, 1.f);
-
-				}*/
+				
 			}
 			else if (players[i]->m_defender->defender_body->GetLinearVelocity().x > 0)
 			{
 				players[i]->m_defender->m_animation.setScale(-1, 1.f);
-				/*if (a.Length() < players[i]->m_defender->defender_body->GetLinearVelocity().Length())
-				{
-				a = b2Vec2(0, 0);
-				}
-				else if (a.Length() / 10 > players[i]->m_defender->defender_body->GetLinearVelocity().Length())
-				{
-				players[i]->m_defender->m_animation.setScale(players[i]->m_defender->m_animation.getScale().x*-1, 1.f);
-
-
-				}*/
+				
 			}
 		}
 		window.draw(s_GUI);
