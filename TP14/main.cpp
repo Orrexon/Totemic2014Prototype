@@ -419,7 +419,7 @@ int main(int argc, char *argv[])
 	Audiosystem* audioSystem = new Audiosystem();
 	audioSystem->createSound("Ball_Contact", "../assets/sound/test.ogg");
 	audioSystem->createMusic("Music_one", "../assets/sound/mamaAfrica.wav");
-	audioSystem->playMusic("Music_one", true);
+	//audioSystem->playMusic("Music_one", true);
 
 	// load textures
 	sf::Texture cursor;
@@ -484,34 +484,6 @@ int main(int argc, char *argv[])
 	sf::Texture purple_d = sf::Texture();
 	purple_g.loadFromFile("../assets/png/purple_g.png", sf::IntRect(0, 0, 163, 164));
 	purple_d.loadFromFile("../assets/png/purple_d.png", sf::IntRect(0, 0, 315, 336));
-
-	std::vector<sf::Sprite> g_sprites;
-	std::vector<sf::Sprite> d_sprites;
-
-	//the sprites
-	sf::Sprite s_red_g = sf::Sprite(red_g);
-	sf::Sprite s_red_d = sf::Sprite(red_d);
-	/*s_red_g.setScale(0.75f,0.75f);
-	s_red_d.setScale(0.10f, 0.10f);*/
-	g_sprites.push_back(s_red_g);
-	d_sprites.push_back(s_red_d);
-
-	sf::Sprite s_blue_g = sf::Sprite(blue_g);
-	sf::Sprite s_blue_d = sf::Sprite(blue_d);
-	//s_blue_g.setScale(0.75f, 0.75f);
-	//s_blue_d.setScale(0.75f, 0.75f);
-	g_sprites.push_back(s_blue_g);
-	d_sprites.push_back(s_blue_d);
-
-	sf::Sprite s_yellow_g = sf::Sprite(yellow_g);
-	sf::Sprite s_yellow_d = sf::Sprite(yellow_d);
-	g_sprites.push_back(s_yellow_g);
-	d_sprites.push_back(s_yellow_d);
-
-	sf::Sprite s_purple_g = sf::Sprite(purple_g);
-	sf::Sprite s_purple_d = sf::Sprite(purple_d);
-	g_sprites.push_back(s_purple_g);
-	d_sprites.push_back(s_purple_d);
 
 
 	//Animations
@@ -674,8 +646,6 @@ int main(int argc, char *argv[])
 		player->m_defender->defender.setOrigin(60.f, 60.f);
 		player->m_defender->defender.setPosition(defenderPositions[i]);
 		player->m_defender->m_respawn_pos = gameToPhysicsUnits(defenderPositions[i]);
-		player->m_defender->m_sprite = d_sprites[i];
-		player->m_defender->m_sprite.setOrigin(player->m_defender->m_sprite.getGlobalBounds().width / 2, player->m_defender->m_sprite.getGlobalBounds().height / 2);
 		player->m_defender->m_animation = animatedSprites[i];
 		player->m_defender->m_animation.setOrigin(128, 160);
 
@@ -684,9 +654,6 @@ int main(int argc, char *argv[])
 		player->m_gatherer->gatherer.setOrigin(15.f, 15.f);
 		player->m_gatherer->gatherer.setPosition(gathererPositions[i]);
 		player->m_gatherer->m_respawn_pos = gameToPhysicsUnits(gathererPositions[i]);
-		player->m_gatherer->m_sprite = g_sprites[i];
-		player->m_gatherer->m_sprite.setOrigin(player->m_gatherer->m_sprite.getGlobalBounds().width / 2
-			, player->m_gatherer->m_sprite.getGlobalBounds().top + player->m_gatherer->m_sprite.getGlobalBounds().height / 2);
 		player->m_gatherer->m_animation = ganimatedSprites[i];
 		player->m_gatherer->m_animation.setOrigin(128 / 2, 128 / 2);
 
