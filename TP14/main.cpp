@@ -101,7 +101,7 @@ struct PlayerEntity
 	bool HasShield = false;
 	bool defenderDeflected = false;
 	bool Lightning = false;
-	bool stunned;
+	bool stunned = false;
 	thor::StopWatch deflectiontimer;
 };
 struct Gatherer : public PlayerEntity
@@ -158,7 +158,21 @@ public:
 	sf::Vector2f lightningPosition;
 	thor::StopWatch respawnTimer;
 	bool doDraw = true;
+	void stun(PlayerEntity& one);
+	void respawn();
 };
+void Lightning::stun(PlayerEntity& one)
+{
+	one.stunned = true;
+	one.m_link->stunned = true;
+	one.m_link->defender_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
+	respawn();
+}
+void Lightning::respawn()
+{
+	lightningPosition = sf::Vector2f(thor::random(200, 1800), thor::random(200, 900));
+	lightningShape.setPosition(lightningPosition);
+}
 void SetStartingColors(std::vector<Player*> players, int value)
 {
 	int i = value;
@@ -332,7 +346,11 @@ class WorldContactListener : public b2ContactListener
 };
 
 //FFW Declare
+
 float DefenderVelocity(b2Vec2 vel1, b2Vec2 vel2);
+void UpdateManyMouse(ManyMouseEvent, std::vector<Player*>);
+void UpdateMovement(std::vector<Player*>, thor::ActionMap<std::string>&);
+void ControlMovementSpeed(std::vector<Player*>);
 
 int main(int argc, char *argv[])
 {
@@ -427,7 +445,7 @@ int main(int argc, char *argv[])
 
 	std::vector<sf::Sprite> g_sprites;
 	std::vector<sf::Sprite> d_sprites;
-	
+
 	//the sprites
 	sf::Sprite s_red_g = sf::Sprite(red_g);
 	sf::Sprite s_red_d = sf::Sprite(red_d);
@@ -713,10 +731,10 @@ int main(int argc, char *argv[])
 	actionMap["p2_left"] = thor::Action(sf::Keyboard::/*Right*/Left, thor::Action::Hold);
 	actionMap["p2_right"] = thor::Action(sf::Keyboard::/*Left*/Right, thor::Action::Hold);
 
-	/*actionMap["p3_up"] = thor::Action(sf::Keyboard::K, thor::Action::Hold);
+	actionMap["p3_up"] = thor::Action(sf::Keyboard::K, thor::Action::Hold);
 	actionMap["p3_down"] = thor::Action(sf::Keyboard::I, thor::Action::Hold);
 	actionMap["p3_left"] = thor::Action(sf::Keyboard::L, thor::Action::Hold);
-	actionMap["p3_right"] = thor::Action(sf::Keyboard::J, thor::Action::Hold);*/
+	actionMap["p3_right"] = thor::Action(sf::Keyboard::J, thor::Action::Hold);
 
 	actionMap["stalker"] = thor::Action(sf::Keyboard::Z, thor::Action::Hold);
 
@@ -741,7 +759,7 @@ int main(int argc, char *argv[])
 		//CoolDown += fDeltaTime;
 		//std::cout << fDeltaTime << std::endl;
 
-		
+
 
 		for (auto player : players)
 		{
@@ -758,7 +776,7 @@ int main(int argc, char *argv[])
 		{
 			i->m_defender->currentVel = i->m_defender->defender_body->GetLinearVelocity();
 		}
-		
+
 		//Shield
 		for (auto player : players)
 		{
@@ -784,139 +802,27 @@ int main(int argc, char *argv[])
 				(player->m_gatherer->gatherer.getPosition().y - lightning.lightningShape.getPosition().y));
 			if (distance <= lightning.lightningShape.getRadius())
 			{
-				
+				player->m_gatherer->Lightning = true;
 				lightning.respawnTimer.restart();
 				lightning.doDraw = false;
+				for (auto player : players)
+				{
+					if (!player->m_gatherer->Lightning)
+					{
+						lightning.stun(*player->m_gatherer);
+					}
+				}
 			}
 		}
+
 		ManyMouseEvent event;
 		while (ManyMouse_PollEvent(&event))
 		{
-			Player* player = players[event.device];
-
-			if (event.type == MANYMOUSE_EVENT_RELMOTION)
-			{
-				sf::Vector2f playerPosition = player->defender.getPosition();
-				if (event.item == 0)
-				{
-					player->m_defender->defender_body->ApplyLinearImpulse(b2Vec2(6.0f * gameToPhysicsUnits(static_cast<float>(event.value)), 0.f), player->m_defender->defender_body->GetWorldCenter(), true);
-				}
-				if (event.item == 1)
-				{
-					player->m_defender->defender_body->ApplyLinearImpulse(b2Vec2(0.f, 6.0f * gameToPhysicsUnits(static_cast<float>(event.value))), player->m_defender->defender_body->GetWorldCenter(), true);
-				}
-			}
+			UpdateManyMouse(event, players);
 		}
-		for (auto &player : players)
-		{
-			if (!player->m_gatherer->GathererIsHit)
-			{
-				if (actionMap.isActive("p1_up"))
-				{
-					//players[0]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(0.f, -8.f));
-					players[0]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(-15.f)), players[0]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-				}
-				if (actionMap.isActive("p1_down"))
-				{
-					players[0]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(15.f)), players[0]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[0]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(players[0]->m_gatherer->gatherer_body->GetLinearVelocity().x, 8.f));
-				}
-				if (actionMap.isActive("p1_left"))
-				{
-					players[0]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(-15.f), 0.f), players[0]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[0]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(-8.f, players[0]->m_gatherer->gatherer_body->GetLinearVelocity().y));
-				}
-				if (actionMap.isActive("p1_right"))
-				{
-					players[0]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(15.f), 0.f), players[0]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[0]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(8.f, players[0]->m_gatherer->gatherer_body->GetLinearVelocity().y));
-				}
-
-				if (actionMap.isActive("p2_up"))
-				{
-					players[1]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(-15.f)), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(players[1]->m_gatherer->gatherer_body->GetLinearVelocity().x, -8.f));
-				}
-				if (actionMap.isActive("p2_down"))
-				{
-					players[1]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(15.f)), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(players[1]->m_gatherer->gatherer_body->GetLinearVelocity().x, 8.f));
-				}
-				if (actionMap.isActive("p2_left"))
-				{
-					players[1]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(-15.f), 0.f), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(-8.f, players[1]->m_gatherer->gatherer_body->GetLinearVelocity().y));
-				}
-				if (actionMap.isActive("p2_right"))
-				{
-					players[1]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(15.f), 0.f), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(8.f, players[1]->m_gatherer->gatherer_body->GetLinearVelocity().y));
-				}
-				if (actionMap.isActive("p3_up"))
-				{
-					players[2]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(-15.f)), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(players[1]->m_gatherer->gatherer_body->GetLinearVelocity().x, -8.f));
-				}
-				if (actionMap.isActive("p3_down"))
-				{
-					players[2]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(15.f)), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(players[1]->m_gatherer->gatherer_body->GetLinearVelocity().x, 8.f));
-				}
-				if (actionMap.isActive("p3_left"))
-				{
-					players[2]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(-15.f), 0.f), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(-8.f, players[1]->m_gatherer->gatherer_body->GetLinearVelocity().y));
-				}
-				if (actionMap.isActive("p3_right"))
-				{
-					players[2]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(15.f), 0.f), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
-					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(8.f, players[1]->m_gatherer->gatherer_body->GetLinearVelocity().y));
-				}
-			}
-		}
-
-
-
-		// Cap the speed to max speed for all pla5yers
-		for (auto &player : players)
-		{
-			b2Vec2 MAX_VELOCITY(30.f, 30.f);
-			if (player->m_defender->defender_body->GetLinearVelocity().x >= MAX_VELOCITY.x)
-			{
-				player->m_defender->defender_body->SetLinearVelocity(b2Vec2(MAX_VELOCITY.x, player->m_defender->defender_body->GetLinearVelocity().y));
-			}
-			if (player->m_defender->defender_body->GetLinearVelocity().y >= MAX_VELOCITY.y)
-			{
-				player->m_defender->defender_body->SetLinearVelocity(b2Vec2(player->m_defender->defender_body->GetLinearVelocity().x, MAX_VELOCITY.y));
-			}
-			if (player->m_defender->defender_body->GetLinearVelocity().x <= -MAX_VELOCITY.x)
-			{
-				player->m_defender->defender_body->SetLinearVelocity(b2Vec2(-MAX_VELOCITY.x, player->m_defender->defender_body->GetLinearVelocity().y));
-			}
-			if (player->m_defender->defender_body->GetLinearVelocity().y <= -MAX_VELOCITY.y)
-			{
-				player->m_defender->defender_body->SetLinearVelocity(b2Vec2(player->m_defender->defender_body->GetLinearVelocity().x, -MAX_VELOCITY.y));
-			}
-
-			b2Vec2 MAX_VELOCITY_GATHERER(12.f, 12.f);
-			if (player->m_gatherer->gatherer_body->GetLinearVelocity().x >= MAX_VELOCITY_GATHERER.x)
-			{
-				player->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(MAX_VELOCITY_GATHERER.x, player->m_gatherer->gatherer_body->GetLinearVelocity().y));
-			}
-			if (player->m_gatherer->gatherer_body->GetLinearVelocity().y >= MAX_VELOCITY_GATHERER.y)
-			{
-				player->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(player->m_gatherer->gatherer_body->GetLinearVelocity().x, MAX_VELOCITY_GATHERER.y));
-			}
-			if (player->m_gatherer->gatherer_body->GetLinearVelocity().x <= -MAX_VELOCITY_GATHERER.x)
-			{
-				player->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(-MAX_VELOCITY_GATHERER.x, player->m_gatherer->gatherer_body->GetLinearVelocity().y));
-			}
-			if (player->m_gatherer->gatherer_body->GetLinearVelocity().y <= -MAX_VELOCITY_GATHERER.y)
-			{
-				player->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(player->m_gatherer->gatherer_body->GetLinearVelocity().x, -MAX_VELOCITY_GATHERER.y));
-			}
-
-		}
+		UpdateMovement(players, actionMap);
+		ControlMovementSpeed(players);
+		
 		///////////
 		//TESTING//
 		///////////
@@ -1237,13 +1143,24 @@ int main(int argc, char *argv[])
 		{
 			lightning.respawnTimer.stop();
 			lightning.doDraw = true;
-			
+			for (auto player : players)
+			{
+				if (player->m_gatherer->stunned)
+				{
+					player->m_gatherer->stunned = false;
+					player->m_defender->stunned = false;
+				}
+				if (player->m_gatherer->Lightning)
+				{
+					player->m_gatherer->Lightning = false;
+				}
+			}
 		}
 		if (lightning.doDraw)
 		{
 			window.draw(lightning.lightningShape);
 		}
-		
+
 		window.draw(partSys);
 
 		//Debugdraw
@@ -1266,4 +1183,182 @@ int main(int argc, char *argv[])
 float DefenderVelocity(b2Vec2 vel1, b2Vec2 vel2)
 {
 	return vel1.Length() + vel2.Length();
+}
+void UpdateManyMouse(ManyMouseEvent event, std::vector<Player*> players)
+{
+	
+		Player* player = players[event.device];
+
+		if (event.type == MANYMOUSE_EVENT_RELMOTION)
+		{
+			sf::Vector2f playerPosition = player->defender.getPosition();
+			if (event.item == 0)
+			{
+				if (!player->m_defender->stunned)
+				{
+					player->m_defender->defender_body->ApplyLinearImpulse(b2Vec2(6.0f * gameToPhysicsUnits(static_cast<float>(event.value)), 0.f), player->m_defender->defender_body->GetWorldCenter(), true);
+				}
+
+			}
+			if (event.item == 1)
+			{
+				if (!player->m_defender->stunned)
+				{
+					player->m_defender->defender_body->ApplyLinearImpulse(b2Vec2(0.f, 6.0f * gameToPhysicsUnits(static_cast<float>(event.value))), player->m_defender->defender_body->GetWorldCenter(), true);
+				}
+			}
+		}
+	
+}
+void UpdateMovement(std::vector<Player*> players, thor::ActionMap<std::string>& actionMap)
+{
+	for (auto &player : players)
+	{
+		if (!player->m_gatherer->GathererIsHit)
+		{
+			if (actionMap.isActive("p1_up"))
+			{
+				if (!players[0]->m_gatherer->stunned)
+				{
+					//players[0]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(0.f, -8.f));
+					players[0]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(-15.f)), players[0]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+				}
+
+			}
+			if (!players[0]->m_gatherer->stunned)
+			{
+
+				if (actionMap.isActive("p1_down"))
+				{
+					players[0]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(15.f)), players[0]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[0]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(players[0]->m_gatherer->gatherer_body->GetLinearVelocity().x, 8.f));
+				}
+			}
+			if (!players[0]->m_gatherer->stunned)
+			{
+
+				if (actionMap.isActive("p1_left"))
+				{
+					players[0]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(-15.f), 0.f), players[0]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[0]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(-8.f, players[0]->m_gatherer->gatherer_body->GetLinearVelocity().y));
+				}
+			}
+			if (!players[0]->m_gatherer->stunned)
+			{
+
+				if (actionMap.isActive("p1_right"))
+				{
+					players[0]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(15.f), 0.f), players[0]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[0]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(8.f, players[0]->m_gatherer->gatherer_body->GetLinearVelocity().y));
+				}
+			}
+			if (!players[1]->m_gatherer->stunned)
+			{
+
+				if (actionMap.isActive("p2_up"))
+				{
+					players[1]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(-15.f)), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(players[1]->m_gatherer->gatherer_body->GetLinearVelocity().x, -8.f));
+				}
+			}
+			if (!players[1]->m_gatherer->stunned)
+			{
+				if (actionMap.isActive("p2_down"))
+				{
+					players[1]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(15.f)), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(players[1]->m_gatherer->gatherer_body->GetLinearVelocity().x, 8.f));
+				}
+			}
+			if (!players[1]->m_gatherer->stunned)
+			{
+				if (actionMap.isActive("p2_left"))
+				{
+					players[1]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(-15.f), 0.f), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(-8.f, players[1]->m_gatherer->gatherer_body->GetLinearVelocity().y));
+				}
+			}
+			if (!players[1]->m_gatherer->stunned)
+			{
+				if (actionMap.isActive("p2_right"))
+				{
+					players[1]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(15.f), 0.f), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(8.f, players[1]->m_gatherer->gatherer_body->GetLinearVelocity().y));
+				}
+			}
+			//if (!players[2]->m_gatherer->stunned)
+			{
+				if (actionMap.isActive("p3_up"))
+				{
+					players[2]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(-15.f)), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(players[1]->m_gatherer->gatherer_body->GetLinearVelocity().x, -8.f));
+				}
+			}
+			//if (!players[2]->m_gatherer->stunned)
+			{
+				if (actionMap.isActive("p3_down"))
+				{
+					players[2]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(0.f, gameToPhysicsUnits(15.f)), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(players[1]->m_gatherer->gatherer_body->GetLinearVelocity().x, 8.f));
+				}
+			}
+			//if (!players[2]->m_gatherer->stunned)
+			{
+				if (actionMap.isActive("p3_left"))
+				{
+					players[2]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(-15.f), 0.f), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(-8.f, players[1]->m_gatherer->gatherer_body->GetLinearVelocity().y));
+				}
+			}
+			//if (!players[2]->m_gatherer->stunned)
+			{
+				if (actionMap.isActive("p3_right"))
+				{
+					players[2]->m_gatherer->gatherer_body->ApplyLinearImpulse(b2Vec2(gameToPhysicsUnits(15.f), 0.f), players[1]->m_gatherer->gatherer_body->GetWorldCenter(), true);
+					//players[1]->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(8.f, players[1]->m_gatherer->gatherer_body->GetLinearVelocity().y));
+				}
+			}
+		}
+	}
+}
+void ControlMovementSpeed(std::vector<Player*> players)
+{
+	for (auto &player : players)
+	{
+		b2Vec2 MAX_VELOCITY(30.f, 30.f);
+		if (player->m_defender->defender_body->GetLinearVelocity().x >= MAX_VELOCITY.x)
+		{
+			player->m_defender->defender_body->SetLinearVelocity(b2Vec2(MAX_VELOCITY.x, player->m_defender->defender_body->GetLinearVelocity().y));
+		}
+		if (player->m_defender->defender_body->GetLinearVelocity().y >= MAX_VELOCITY.y)
+		{
+			player->m_defender->defender_body->SetLinearVelocity(b2Vec2(player->m_defender->defender_body->GetLinearVelocity().x, MAX_VELOCITY.y));
+		}
+		if (player->m_defender->defender_body->GetLinearVelocity().x <= -MAX_VELOCITY.x)
+		{
+			player->m_defender->defender_body->SetLinearVelocity(b2Vec2(-MAX_VELOCITY.x, player->m_defender->defender_body->GetLinearVelocity().y));
+		}
+		if (player->m_defender->defender_body->GetLinearVelocity().y <= -MAX_VELOCITY.y)
+		{
+			player->m_defender->defender_body->SetLinearVelocity(b2Vec2(player->m_defender->defender_body->GetLinearVelocity().x, -MAX_VELOCITY.y));
+		}
+
+		b2Vec2 MAX_VELOCITY_GATHERER(12.f, 12.f);
+		if (player->m_gatherer->gatherer_body->GetLinearVelocity().x >= MAX_VELOCITY_GATHERER.x)
+		{
+			player->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(MAX_VELOCITY_GATHERER.x, player->m_gatherer->gatherer_body->GetLinearVelocity().y));
+		}
+		if (player->m_gatherer->gatherer_body->GetLinearVelocity().y >= MAX_VELOCITY_GATHERER.y)
+		{
+			player->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(player->m_gatherer->gatherer_body->GetLinearVelocity().x, MAX_VELOCITY_GATHERER.y));
+		}
+		if (player->m_gatherer->gatherer_body->GetLinearVelocity().x <= -MAX_VELOCITY_GATHERER.x)
+		{
+			player->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(-MAX_VELOCITY_GATHERER.x, player->m_gatherer->gatherer_body->GetLinearVelocity().y));
+		}
+		if (player->m_gatherer->gatherer_body->GetLinearVelocity().y <= -MAX_VELOCITY_GATHERER.y)
+		{
+			player->m_gatherer->gatherer_body->SetLinearVelocity(b2Vec2(player->m_gatherer->gatherer_body->GetLinearVelocity().x, -MAX_VELOCITY_GATHERER.y));
+		}
+
+	}
 }

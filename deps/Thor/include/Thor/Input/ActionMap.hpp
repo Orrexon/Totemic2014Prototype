@@ -158,6 +158,8 @@ class ActionMap : private aurora::NonCopyable
 
 	// ---------------------------------------------------------------------------------------------------------------------------
 	// Private variables
+		
+
 	private:
 		Map							mActionMap;
 		detail::EventBuffer			mEventBuffer;
